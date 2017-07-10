@@ -13,6 +13,8 @@ public interface IControllerRelogio {
     
     public void novaMensagemRecebida(String[] str);
 
+    public void forcaAtualizacaoHorario(long horario);
+    
     public long getHorario();
 
     public void setHorario(long parseLong);

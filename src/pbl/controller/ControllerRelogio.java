@@ -15,14 +15,15 @@ import pbl.model.IControllerRelogio;
 public class ControllerRelogio implements IControllerRelogio{
 
     private final Principal telaPrincipal;
-    private final ControllerConexao conexao;
+    private final ControllerConexao controllerConexao;
+    ControllerRelogio controller;
     private boolean coordenador;
     private float drift;
     private int id;
     
     public ControllerRelogio(Principal tela) {
         this.telaPrincipal = tela;
-        this.conexao = new ControllerConexao(this);
+        this.controllerConexao = new ControllerConexao(this);
         this.drift = 1;
     }
 
@@ -67,6 +68,13 @@ public class ControllerRelogio implements IControllerRelogio{
 
     public boolean isCoordenador(){
         return coordenador;
+    }
+
+    @Override
+    public void forcaAtualizacaoHorario(long horario) {
+        if(coordenador){
+            controllerConexao.atualizarHorario(horario);
+        }
     }
     
     

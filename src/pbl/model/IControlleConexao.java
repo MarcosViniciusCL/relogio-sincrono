@@ -32,7 +32,9 @@ public interface IControlleConexao {
     
     public void novoRelogioR(String[] str);
     
-    public void iniciarTesteDelayR();
+    public void iniciarTesteDelayR(String[] str);
+    
+    public void concluiTesteDelayR(String str[]);
     
     public void idPemitido(String[] str);
 

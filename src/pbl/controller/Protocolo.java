@@ -22,6 +22,7 @@ public class Protocolo {
     private final int protAtualRelogio = 2;             //Atualizar relogio;
     private final int protIDPermitido = 3;              //Informa ao novo cliente que o id não é permitido.
     private final int protTesteDelay = 4;               //Protocolo para teste de delay da rede.
+    private final int protTesteDelayResp = 41;          //Responde com os horarios para teste delay;
     //*************************************************************************************************************
 
 
@@ -53,7 +54,10 @@ public class Protocolo {
                 classe.atualizarHorarioR(str);
                 break;
             case protTesteDelay:
-                classe.iniciarTesteDelayR();
+                classe.iniciarTesteDelayR(str);
+                break;
+            case protTesteDelayResp:
+                classe.concluiTesteDelayR(str);
                 break;
             default:
                 classe.mensagemDesconhecida(str);

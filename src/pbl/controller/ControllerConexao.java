@@ -24,10 +24,10 @@ import pbl.model.IControllerRelogio;
  *
  * @author marcos
  */
-public class ControllerConexao implements IControlleConexao{
-    
+public class ControllerConexao implements IControlleConexao {
+
     private final Protocolo protocolo;
-    
+
     private final int porta = 4321;
     private final String endGrupo = "239.0.0.1";
     private MulticastSocket grupoMulticast;
@@ -46,6 +46,7 @@ public class ControllerConexao implements IControlleConexao{
     private final int protAtualRelogio = 2;             //Atualizar relogio;
     private final int protIDPermitido = 3;              //Informa ao novo cliente que o id não é permitido.
     private final int protTesteDelay = 4;               //Protocolo para teste de delay da rede.
+    private final int protTesteDelayResp = 41;          //Responde com os horarios para teste delay;
     //*************************************************************************************************************
 
     //******************************** VARIAVEIS DE REDE *******************************************************
@@ -59,7 +60,7 @@ public class ControllerConexao implements IControlleConexao{
     private long maiorHorario = 0;
     private long meuHorario = 0;
     private int idMaior = -1;
-    
+
     public ControllerConexao(IControllerRelogio controllerConexao) {
         this.controllerRelogio = controllerConexao;
         this.coordenador = false;
@@ -71,70 +72,65 @@ public class ControllerConexao implements IControlleConexao{
     }
 
     //******************************************** ENVIO DE MENSAGEM ************************************** 
+    @Override
     public void atualizarHorario(long horario) {
         meuHorario = horario;
         System.out.print(".");
-        enviarMensagemGRP(protAtualRelogio + ";" + horario);
+        enviarMensagemGRP(protAtualRelogio + ";" + (horario + this.delayRede));
     }
-    
+
+    @Override
     public void iniciarEleicao() {
-        enviarMensagemGRP(protEleicaoIniciar + "");
+        enviarMensagemGRP(protEleicaoIniciar + ";" + controllerRelogio.getHorario() + "");
     }
-    
+
+    @Override
     public void enviarHorarioEleicao() {
         long auxMeuHorario = controllerRelogio.getHorario();
         this.meuHorario = auxMeuHorario; //Salvo o meu horario para comparação futuras.
         enviarMensagemGRP(protEleicaoHorario + ";" + auxMeuHorario);
     }
-    
+
+    @Override
     public void novoRelogio() {
         pause(1000);
         enviarMensagemGRP(protNovoCliente + "");
         iniciarEleicao();
     }
-    
+
+    @Override
     public void iniciarTesteDelay() {
-        permitirEnvio(false); //<-- Impedi que qualquer mensagem seja enviada pela rede deste host
-        long inicio;
-        long fim;
-        String[] resp;
-        
-        inicio = System.currentTimeMillis();
-        enviarMensagemGRP(protTesteDelay + "");
-        resp = receberMensagemGRP().split(";");
-        fim = System.currentTimeMillis();
-        
-        if (Integer.parseInt(resp[1].trim()) == protTesteDelay) {
-            this.delayRede = fim - inicio;
-            this.delayRede /= 2;
-            System.out.println("Delay da rede: " + delayRede + "ms");
-        }
-        
-        permitirEnvio(true); //<-- Libera o envio de mensagens deste cliente.
+        enviarMensagemGRP(protTesteDelay + ";" + controllerRelogio.getHorario());
     }
-    
+
+    @Override
     public void solicitarID() {
         enviarMensagemGRP(protNovoCliente + "");
     }
 
     //********************************** RECEBIMENTO MENSAGEM **********************************************
+    @Override
     public void atualizarHorarioR(String[] str) {
         int idJog = Integer.parseInt(str[0]);
         long tempH = Long.parseLong(str[2].trim());
         zerarTimeout(); // <-- Sempre que recebe uma mensagem de atualização do relogio, zera o timeout.
         zerarTempoReenvio(); // <-- Zerar tempo de reenvio de uma mensagem.(Só o coordenador pode enviar mensagem de atualização do relogio.)
         testarDuplicidade(idJog, tempH);
-        if (!testarErroHoraPassado(tempH)) {  //Verifica se o coordenador está com horario no futuro.
+        if (!testarErroHoraPassado(tempH) && idJog != identificador) {  //Verifica se o coordenador está com horario no futuro.
             controllerRelogio.setHorario(tempH + this.delayRede / 1000);
+            System.out.print("~");
         }
     }
-    
+
+    @Override
     public void iniciarEleicaoR(String[] str) {
+        long hora = Long.parseLong(str[2].trim()); //Horario de quem iniciou a eleição;
         listRelogio.clear();
         zerarTimeout();
         enviarHorarioEleicao(); //Quando recebe uma mensagem de eleição, envia ao grupo seu horario atual para fazer a eleição.
     }
-    
+
+    @Override
     public void enviarHorarioEleicaoR(String[] str) {
         int idJog = Integer.parseInt(str[0]);
         long tempH = Long.parseLong(str[2].trim());
@@ -143,18 +139,39 @@ public class ControllerConexao implements IControlleConexao{
         Collections.sort(listRelogio);
         setCoordenador(listRelogio.get(0).getId() == this.identificador && listRelogio.get(0).getHorario() == this.meuHorario);
     }
-    
+
+    @Override
     public void novoRelogioR(String[] str) {
         int idNovoJog = Integer.parseInt(str[0]);
         System.out.println("Há um novo jogador. Nova eleição será iniciada.");
     }
-    
-    public void iniciarTesteDelayR() {
-        permitirEnvio(false);
-        pause(500);
-        permitirEnvio(true);
+
+    @Override
+    public void iniciarTesteDelayR(String[] str) {
+        int id = Integer.parseInt(str[0].trim());
+        if (id != identificador) {
+            long horarioA = Long.parseLong(str[2].trim());
+            long horarioX = controllerRelogio.getHorario();
+            pause(1000);
+            long horarioY = controllerRelogio.getHorario();
+            enviarMensagemGRP(protTesteDelayResp + ";" + horarioA + ";" + horarioX + ";" + horarioY);
+        }
     }
-    
+
+    @Override
+    public void concluiTesteDelayR(String[] str) {
+        int horarioA = Integer.parseInt(str[2].trim());
+        int horarioX = Integer.parseInt(str[3].trim());
+        int horarioY = Integer.parseInt(str[4].trim());
+        int horarioB = (int) controllerRelogio.getHorario();
+        int delay = (horarioB - horarioA) - (horarioY - horarioX);
+        if (delay > this.delayRede) {
+            this.delayRede = delay;
+            System.out.println("Delay: " + this.delayRede + "s");
+        }
+    }
+
+    @Override
     public void idPemitido(String[] str) {
         int idJog = Integer.parseInt(str[0]);
         if (idJog == identificador && this.idMaior == -1) {
@@ -169,8 +186,6 @@ public class ControllerConexao implements IControlleConexao{
     /**
      * ******************************************************************************************************
      */
-
-
     /**
      * Assina um grupo multcast.
      *
@@ -209,7 +224,7 @@ public class ControllerConexao implements IControlleConexao{
             } catch (IOException ex) {
                 Logger.getLogger(ControllerConexao.class.getName()).log(Level.SEVERE, null, ex);
             }
-            
+
         }
     }
 
@@ -258,11 +273,11 @@ public class ControllerConexao implements IControlleConexao{
         }
         return null;
     }
-    
+
     private void mensagemRecebida(String string) {
         protocolo.chegouMensagem(string);
     }
-    
+
     private void iniciarTimeout() {
         new java.util.Timer().schedule(new java.util.TimerTask() {
             int auxTimeoutDelay = 0; //<-- Tempo para testar o delay da rede.
@@ -272,13 +287,15 @@ public class ControllerConexao implements IControlleConexao{
                 auxTimeout++;
                 auxTempoReenvio++;
                 auxTimeoutDelay++;
-                
+
                 if (auxTempoReenvio == tempoReenvio && coordenador) {
                     atualizarHorario(controllerRelogio.getHorario());
+                    zerarTempoReenvio();
                 }
                 if (auxTimeout == timeout) {
                     System.out.println("Não há uma nova mensagem a " + timeout + " segundos. Convocando uma eleição.");
                     iniciarEleicao();
+                    zerarTimeout();
                 }
                 if (auxTimeoutDelay == 60) { //Atualizar o delay a cada 60 seg
                     if (coordenador) {
@@ -291,22 +308,22 @@ public class ControllerConexao implements IControlleConexao{
                 1000 //tempo, 1000ms = 1segundo
         );
     }
-    
+
     private void testarDuplicidade(int idJog, long horario) {
         if (idJog == this.identificador && this.meuHorario != horario) {
             System.out.println("Existe ID igual o meu na rede. Trocando ID.");
             setID(this.identificador++);
         }
     }
-    
+
     private void zerarTimeout() {
         this.auxTimeout = 0;
     }
-    
+
     private void zerarTempoReenvio() {
         this.auxTempoReenvio = 0;
     }
-    
+
     private void setCoordenador(boolean b) {
         this.coordenador = b;
         controllerRelogio.setCoordenador(b);
@@ -314,7 +331,7 @@ public class ControllerConexao implements IControlleConexao{
             System.out.println("Sou o novo coordenador.");
         }
     }
-    
+
     private boolean testarErroHoraPassado(long tempH) {
         if (tempH < controllerRelogio.getHorario()) {
             System.out.println("Erro no coordenador. Solicitando eleição.");
@@ -323,12 +340,12 @@ public class ControllerConexao implements IControlleConexao{
         }
         return false;
     }
-    
+
     private void setID(int id) {
         this.identificador = id;
         controllerRelogio.setID(id);
     }
-    
+
     private void pause(long milisegundo) {
         try {
             Thread.sleep(milisegundo);
@@ -336,7 +353,7 @@ public class ControllerConexao implements IControlleConexao{
             Logger.getLogger(ControllerConexao.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
     private void permitirEnvio(boolean b) {
         this.podeEnviar = b;
     }
@@ -345,5 +362,5 @@ public class ControllerConexao implements IControlleConexao{
     public void mensagemDesconhecida(String[] str) {
         controllerRelogio.novaMensagemRecebida(str);
     }
-    
+
 }

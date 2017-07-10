@@ -117,7 +117,7 @@ public class TelaHorario extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField1ActionPerformed
-        jButton1ActionPerformed(evt);
+        jButton2ActionPerformed(evt);
     }//GEN-LAST:event_jTextField1ActionPerformed
 
 

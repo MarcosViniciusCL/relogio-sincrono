@@ -5,6 +5,9 @@
  */
 package pbl.view;
 
+import com.sun.glass.events.KeyEvent;
+import com.sun.webkit.dom.EventImpl;
+
 /**
  *
  * @author marcos
@@ -41,6 +44,11 @@ public class TelaDrift extends javax.swing.JFrame {
         jSpinner1.setModel(new javax.swing.SpinnerNumberModel(Float.valueOf(1.0f), Float.valueOf(0.1f), Float.valueOf(1.9f), Float.valueOf(0.1f)));
         jSpinner1.setAutoscrolls(true);
         jSpinner1.setFocusCycleRoot(true);
+        jSpinner1.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                jSpinner1KeyPressed(evt);
+            }
+        });
 
         jLabel1.setText("Drift:");
 
@@ -97,6 +105,12 @@ public class TelaDrift extends javax.swing.JFrame {
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
         dispose();
     }//GEN-LAST:event_jButton2ActionPerformed
+
+    private void jSpinner1KeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jSpinner1KeyPressed
+        if(evt.getKeyCode() == KeyEvent.VK_ENTER){
+            jButton1ActionPerformed(null);
+        }
+    }//GEN-LAST:event_jSpinner1KeyPressed
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

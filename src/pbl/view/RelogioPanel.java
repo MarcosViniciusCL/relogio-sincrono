@@ -6,6 +6,8 @@
 package pbl.view;
 
 import java.util.Timer;
+import pbl.controller.ControllerConexao;
+import pbl.controller.ControllerRelogio;
 
 /**
  *
@@ -16,6 +18,7 @@ public class RelogioPanel extends javax.swing.JPanel {
     private long tempo;
     private final long tempMax;
     private float drift;
+    private ControllerRelogio controller;
     
     private Timer timetask;
 
@@ -132,6 +135,10 @@ public class RelogioPanel extends javax.swing.JPanel {
         int min = (int) tempo / 60;
         int hora = min / 60;
         min %= 60;
+        
+        jTextFieldSeg.setText("");
+        jTextFieldMin.setText("");
+        jTextFieldHor.setText("");
         jTextFieldSeg.setText(seg + "");
         jTextFieldMin.setText(min + "");
         jTextFieldHor.setText(hora + "");
