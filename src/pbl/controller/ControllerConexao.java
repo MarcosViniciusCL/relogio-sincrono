@@ -116,6 +116,10 @@ public class ControllerConexao implements IControlleConexao {
         zerarTimeout(); // <-- Sempre que recebe uma mensagem de atualização do relogio, zera o timeout.
         zerarTempoReenvio(); // <-- Zerar tempo de reenvio de uma mensagem.(Só o coordenador pode enviar mensagem de atualização do relogio.)
         testarDuplicidade(idJog, tempH);
+        if (coordenador && idJog != identificador) { //Verifica se existe outro coordenador.
+            System.out.println("Exite mais de um coordenador no grupo.");
+            iniciarEleicao();
+        }
         if (!testarErroHoraPassado(tempH) && idJog != identificador) {  //Verifica se o coordenador está com horario no futuro.
             controllerRelogio.setHorario(tempH + this.delayRede / 1000);
             System.out.print("~");
