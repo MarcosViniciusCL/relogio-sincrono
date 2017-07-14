@@ -21,7 +21,7 @@ import pbl.model.Relogio;
 import pbl.model.IControllerRelogio;
 
 /**
- *
+ * Classe que faz o controle de toda a comunicação na rede.
  * @author marcos
  */
 public class ControllerConexao implements IControlleConexao {
@@ -72,6 +72,10 @@ public class ControllerConexao implements IControlleConexao {
     }
 
     //******************************************** ENVIO DE MENSAGEM ************************************** 
+    /**
+     * Quando coordenador, esse metodo é usado para enviar atualização do horário.
+     * @param horario 
+     */
     @Override
     public void atualizarHorario(long horario) {
         meuHorario = horario;
@@ -79,11 +83,18 @@ public class ControllerConexao implements IControlleConexao {
         enviarMensagemGRP(protAtualRelogio + ";" + (horario + this.delayRede));
     }
 
+    /**
+     * Metodo responsável de iniciar uma nova eleição.
+     */
     @Override
     public void iniciarEleicao() {
         enviarMensagemGRP(protEleicaoIniciar + ";" + controllerRelogio.getHorario() + "");
     }
 
+    /**
+     * Quando uma nova eleiçao é solicitada, esta metodo é usado para envia o horário 
+     * de todos os relógios.
+     */
     @Override
     public void enviarHorarioEleicao() {
         long auxMeuHorario = controllerRelogio.getHorario();
@@ -91,6 +102,9 @@ public class ControllerConexao implements IControlleConexao {
         enviarMensagemGRP(protEleicaoHorario + ";" + auxMeuHorario);
     }
 
+    /**
+     * Quando um novo relógio entra na rede esse metodo é executado.
+     */
     @Override
     public void novoRelogio() {
         pause(1000);
@@ -98,17 +112,28 @@ public class ControllerConexao implements IControlleConexao {
         iniciarEleicao();
     }
 
+    /**
+     * Inicia o teste do delay.
+     */
     @Override
     public void iniciarTesteDelay() {
-        enviarMensagemGRP(protTesteDelay + ";" + controllerRelogio.getHorario());
+        enviarMensagemGRP(protTesteDelay + ";" + System.currentTimeMillis());
     }
 
+    /**
+     * Solicita na rede qual id está disponível.
+     */
     @Override
     public void solicitarID() {
         enviarMensagemGRP(protNovoCliente + "");
     }
 
     //********************************** RECEBIMENTO MENSAGEM **********************************************
+    /**
+     * Quando recebe atualização de relógio do coordenado esse metodo é responsavel por
+     * adicionar o horario no seu relogio.
+     * @param str 
+     */
     @Override
     public void atualizarHorarioR(String[] str) {
         int idJog = Integer.parseInt(str[0]);
@@ -126,6 +151,11 @@ public class ControllerConexao implements IControlleConexao {
         }
     }
 
+    /**
+     * Quando algum relógio inicia uma eleição, esse metodo é responsável
+     * enviar seu horario para o grupo.
+     * @param str - Dados da mensagem
+     */
     @Override
     public void iniciarEleicaoR(String[] str) {
         long hora = Long.parseLong(str[2].trim()); //Horario de quem iniciou a eleição;
@@ -134,6 +164,10 @@ public class ControllerConexao implements IControlleConexao {
         enviarHorarioEleicao(); //Quando recebe uma mensagem de eleição, envia ao grupo seu horario atual para fazer a eleição.
     }
 
+    /**
+     * Aguarda que os relogios madem seus horarios para um eleição.
+     * @param str 
+     */
     @Override
     public void enviarHorarioEleicaoR(String[] str) {
         int idJog = Integer.parseInt(str[0]);
@@ -150,31 +184,44 @@ public class ControllerConexao implements IControlleConexao {
         System.out.println("Há um novo jogador. Nova eleição será iniciada.");
     }
 
+    /**
+     * Manda para o grupo mensagem informando que o teste de delay será iniciado.
+     * @param str 
+     */
     @Override
     public void iniciarTesteDelayR(String[] str) {
         int id = Integer.parseInt(str[0].trim());
         if (id != identificador) {
             long horarioA = Long.parseLong(str[2].trim());
-            long horarioX = controllerRelogio.getHorario();
+            long horarioX = System.currentTimeMillis();
             pause(1000);
-            long horarioY = controllerRelogio.getHorario();
+            long horarioY = System.currentTimeMillis();
             enviarMensagemGRP(protTesteDelayResp + ";" + horarioA + ";" + horarioX + ";" + horarioY);
         }
     }
 
+    /**
+     * Quando os outros relogios enviar seu horario a equação do teste do delay
+     * é feita neste metodo.
+     * @param str - Dados da mensagem
+     */
     @Override
     public void concluiTesteDelayR(String[] str) {
-        int horarioA = Integer.parseInt(str[2].trim());
-        int horarioX = Integer.parseInt(str[3].trim());
-        int horarioY = Integer.parseInt(str[4].trim());
-        int horarioB = (int) controllerRelogio.getHorario();
-        int delay = (horarioB - horarioA) - (horarioY - horarioX);
+        long horarioA = Long.parseLong(str[2].trim());
+        long horarioX = Long.parseLong(str[3].trim());
+        long horarioY = Long.parseLong(str[4].trim());
+        long horarioB = System.currentTimeMillis();
+        long delay = (horarioB - horarioA) - (horarioY - horarioX);
         if (delay > this.delayRede) {
             this.delayRede = delay;
             System.out.println("Delay: " + this.delayRede + "s");
         }
     }
 
+    /**
+     * Verifica qual id é permitido na rede.
+     * @param str 
+     */
     @Override
     public void idPemitido(String[] str) {
         int idJog = Integer.parseInt(str[0]);
@@ -362,6 +409,11 @@ public class ControllerConexao implements IControlleConexao {
         this.podeEnviar = b;
     }
 
+    /**
+     * Caso o controller de conexão não entenda qual é a mensagem. Manda para o controller do
+     * relógio.
+     * @param str 
+     */
     @Override
     public void mensagemDesconhecida(String[] str) {
         controllerRelogio.novaMensagemRecebida(str);

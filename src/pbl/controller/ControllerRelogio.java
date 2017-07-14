@@ -9,7 +9,7 @@ import pbl.view.Principal;
 import pbl.model.IControllerRelogio;
 
 /**
- *
+ * Classe responsável por gerenciar todo o relógio.
  * @author marcos
  */
 public class ControllerRelogio implements IControllerRelogio{
@@ -29,25 +29,40 @@ public class ControllerRelogio implements IControllerRelogio{
 
     @Override
     public void novaMensagemRecebida(String[] str) {
-
     }
 
+    /**
+     * Retona o horário do relógio.
+     * @return long - horario em segundos
+     */
     @Override
     public long getHorario() {
         return telaPrincipal.getHorario();
     }
 
+    /**
+     * Adiciona o horário recebido como parâmetro no relógio.
+     * @param horario - tempo em segundos.
+     */
     @Override
     public void setHorario(long horario) {
         telaPrincipal.setHorarioSeg(horario);
     }
 
+    /**
+     * Adiciona se é coordenador.
+     * @param b - boolean
+     */
     @Override
     public void setCoordenador(boolean b) {
         this.coordenador = b;
         this.telaPrincipal.atualizar();
     }
 
+    /**
+     * Retorna o drift do relogio no momento.
+     * @return float - drift relógio
+     */
     public float getDrift() {
         return drift;
     }

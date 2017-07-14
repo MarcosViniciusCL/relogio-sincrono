@@ -8,11 +8,11 @@ package pbl.controller;
 import pbl.model.IControlleConexao;
 
 /**
- *
+ * Esta classe determina as ações que serão tomada baseada no protocolo de comunicação.
  * @author marcos
  */
 public class Protocolo {
-    private IControlleConexao classe;
+    private final IControlleConexao classe;
     
     //********************************** PROTOCOLOS DE REDE *******************************************************
     private final int protGenerico = Integer.MAX_VALUE;
@@ -30,6 +30,10 @@ public class Protocolo {
         this.classe = classe;
     }
     
+    /**
+     * Metodo excutado sempre que chega uma nova mensagem.
+     * @param str 
+     */
     public void chegouMensagem(String str){
         seletorAcao(str.split(";"));
     }
